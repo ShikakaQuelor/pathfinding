@@ -1,17 +1,16 @@
 <template>
-  <img alt="Vue logo" src="./assets/logo.png">
-  <HelloWorld msg="Welcome to Your Vue.js App"/>
+  <PathViz></PathViz>
 </template>
 
 <script>
-import HelloWorld from './components/HelloWorld.vue'
+import PathViz from "./components/PathfindingVisualizer.vue";
 
 export default {
-  name: 'App',
+  name: "App",
   components: {
-    HelloWorld
-  }
-}
+    PathViz,
+  },
+};
 </script>
 
 <style>
@@ -22,5 +21,16 @@ export default {
   text-align: center;
   color: #2c3e50;
   margin-top: 60px;
+}
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+body {
+  background: #e0e0e2;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 </style>
