@@ -303,4 +303,9 @@ const createNode = (row, col) => {
     color: #721817;
   }
 }
+@media only screen and (max-width: 1800px) {
+  .grid {
+    width: 1420px;
+  }
+}
 </style>

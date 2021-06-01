@@ -126,4 +126,10 @@ export default {
     background-color: #21d4d4;
   }
 }
+@media only screen and (max-width: 1800px) {
+  .node {
+    width: 20px;
+    height: 20px;
+  }
+}
 </style>>
