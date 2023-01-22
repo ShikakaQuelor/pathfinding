@@ -41,8 +41,8 @@
 
 <script>
 import { onMounted, reactive, toRefs } from "vue";
-import Node from "./Node";
-import Toolbar from "./Toolbar";
+import Node from "./Node.vue";
+import Toolbar from "./Toolbar.vue";
 import { getNodesShortestPath } from "../algorithms/utility";
 import { dijkstra } from "../algorithms/dijkstras";
 import { astar } from "../algorithms/astar";
