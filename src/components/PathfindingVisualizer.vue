@@ -21,7 +21,7 @@
     @get-algo="(e) => (algorithm = e)"
   />
   <div class="grid" @mouseup="handleMouseUp">
-    <div class="row" v-for="(row, rid) in grid" :key="rid">
+    <template v-for="(row, rid) in grid" :key="rid">
       <template v-for="(node, cid) in row" :key="cid">
         <Node
           :row="node.row"
@@ -34,19 +34,19 @@
           @mouse-leave="handleMouseLeave"
         ></Node>
       </template>
-    </div>
+    </template>
   </div>
   <div class="credits">Made by Johan Berglund</div>
 </template>
 
 <script>
-import { onMounted, reactive, toRefs } from "vue";
-import Node from "./Node.vue";
-import Toolbar from "./Toolbar.vue";
-import { getNodesShortestPath } from "../algorithms/utility";
-import { dijkstra } from "../algorithms/dijkstras";
-import { astar } from "../algorithms/astar";
-import { dfsMaze } from "../algorithms/maze";
+import { onMounted, reactive, toRefs } from 'vue';
+import Node from './Node.vue';
+import Toolbar from './Toolbar.vue';
+import { getNodesShortestPath } from '../algorithms/utility';
+import { dijkstra } from '../algorithms/dijkstras';
+import { astar } from '../algorithms/astar';
+import { dfsMaze } from '../algorithms/maze';
 
 export const NODE_START_ROW = 15;
 export const NODE_START_COL = 15;
@@ -134,11 +134,11 @@ export default {
           const node = visitedNodesInOrder[i];
           let element = document.getElementById(`node-${node.row}-${node.col}`);
           if (
-            element.classList.contains("node-start") ||
-            element.classList.contains("node-finish")
+            element.classList.contains('node-start') ||
+            element.classList.contains('node-finish')
           )
             return;
-          element.className = "node node-visited";
+          element.className = 'node node-visited';
         }, state.animSpeed * i);
       }
     }
@@ -149,11 +149,11 @@ export default {
           const node = nodesInShortestPathOrder[i];
           let element = document.getElementById(`node-${node.row}-${node.col}`);
 
-          if (element.classList.contains("node-start"))
-            element.className = "node node-shortest node-start";
-          else if (element.classList.contains("node-finish"))
-            element.className = "node node-shortest node-finish";
-          else element.className = "node node-shortest";
+          if (element.classList.contains('node-start'))
+            element.className = 'node node-shortest node-start';
+          else if (element.classList.contains('node-finish'))
+            element.className = 'node node-shortest node-finish';
+          else element.className = 'node node-shortest';
         }, state.animSpeed * 5 * i);
       }
     }
@@ -178,17 +178,15 @@ export default {
 
     function solvePath() {
       resetPath();
-      const {
-        visitedNodesInOrder,
-        nodesInShortestPathOrder,
-      } = getPathAlgorithm();
+      const { visitedNodesInOrder, nodesInShortestPathOrder } =
+        getPathAlgorithm();
       animatePath(visitedNodesInOrder, nodesInShortestPathOrder);
     }
 
     function resetPath() {
       for (const row of state.grid) {
         for (const node of row) {
-          resetNode(node, ["node-shortest", "node-visited"]);
+          resetNode(node, ['node-shortest', 'node-visited']);
         }
       }
       var id = window.setTimeout(function () {}, 0);

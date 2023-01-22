@@ -9,27 +9,24 @@
   ></div>
 </template>
 
-<script>
-export default {
-  props: {
-    row: Number,
-    col: Number,
-    isStart: Boolean,
-    isEnd: Boolean,
-    isWall: Boolean,
-  },
-  computed: {
-    extraClass() {
-      return this.isEnd
-        ? "node-finish"
-        : this.isStart
-        ? "node-start"
-        : this.isWall
-        ? "node-wall"
-        : "";
-    },
-  },
-};
+<script setup lang="ts">
+import { defineProps, computed } from 'vue';
+const props = defineProps<{
+  row: number;
+  col: number;
+  isStart: boolean;
+  isEnd: boolean;
+  isWall: boolean;
+}>();
+const extraClass = computed(() => {
+  return props.isEnd
+    ? 'node-finish'
+    : props.isStart
+    ? 'node-start'
+    : props.isWall
+    ? 'node-wall'
+    : '';
+});
 </script>
 
 <style lang="scss">
@@ -59,14 +56,14 @@ export default {
 }
 
 .node-start {
-  background-image: url("../assets/start.png");
+  background-image: url('../assets/start.png');
   background-position: center;
   background-repeat: no-repeat;
   background-size: contain;
 }
 
 .node-finish {
-  background-image: url("../assets/end.png");
+  background-image: url('../assets/end.png');
   background-position: center;
   background-repeat: no-repeat;
   background-size: contain;
@@ -132,4 +129,4 @@ export default {
     height: 20px;
   }
 }
-</style>>
+</style>
