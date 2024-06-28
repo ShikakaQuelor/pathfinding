@@ -1,95 +1,60 @@
+<script setup>
+import { ref, reactive } from "vue";
+
+const selectedAlgorithm = ref(0);
+const animationSpeed = ref(15);
+const isMouseDown = ref(false);
+const shouldAutoUpdate = ref(false);
+
+const styleObject = reactive({
+  left: '0px',
+  top: '0px',
+});
+
+const speedName = [
+  "Instant",
+  "Very-Fast",
+  "Fast",
+  "Normal",
+  "Slow",
+  "Super-slow"
+];
+
+function moveWindow(e) {
+  if (isMouseDown.value) {
+    var rect = e.target.getBoundingClientRect();
+    styleObject.left = rect.left + e.movementX + 'px';
+    styleObject.top = rect.top + e.movementY + 'px';
+  }
+}
+
+</script>
+
 <template>
-  <div
-    class="toolbar"
-    @mousedown.self="mouseClick = !mouseClick"
-    @mousemove="moveWindow"
-    @mouseup="mouseClick = false"
-    @mouseout="mouseClick = false"
-    :style="styles"
-  >
+  <div class="toolbar" @mousedown.self="isMouseDown = true" @mousemove="moveWindow" @mouseup="isMouseDown = false"
+    @mouseout="isMouseDown = false" :style="styleObject">
     <h2>Toolbar</h2>
     <div class="speed-range-wrap"></div>
     Animation speed
-    <input
-      class="speed-range"
-      type="range"
-      min="0"
-      max="25"
-      step="5"
-      v-model="animationSpeed"
-      @input="$emit('get-speed', animationSpeed)"
-    />
+    <input class="speed-range" type="range" min="0" max="25" step="5" v-model="animationSpeed"
+      @input="$emit('get-speed', animationSpeed)" />
     {{ speedName[animationSpeed / 5] }}
-    <select
-      class="algo-selector"
-      v-model="algorithmNum"
-      @change="$emit('get-algo', algorithmNum)"
-    >
+    <select class="algo-selector" v-model="selectedAlgorithm" @change="$emit('get-algo', selectedAlgorithm)">
       <option value="0" selected>Dijkstras</option>
       <option value="1">A*</option>
     </select>
     <button class="maze-button" @click="$emit('maze-click')">
       Generate random maze
     </button>
-    <label for="autoupdate">Auto-update path</label>
-    <input
-      type="checkbox"
-      name="autoupdate"
-      v-model="autoupdate"
-      @change="$emit('autoupdate-click', autoupdate)"
-    />
+    <label for="shouldAutoUpdate">Auto-update path</label>
+    <input type="checkbox" name="shouldAutoUpdate" v-model="shouldAutoUpdate"
+      @change="$emit('autoupdate-click', shouldAutoUpdate)" />
     <div class="button-wrap">
       <button class="solve-button" @click="$emit('solve-click')">Solve</button>
       <button class="reset-button" @click="$emit('reset-click')">Reset</button>
     </div>
   </div>
 </template>
-
-<script>
-import { computed, reactive, toRefs } from "vue";
-export default {
-  props: {},
-  setup() {
-    const state = reactive({
-      algorithmNum: 0,
-      animationSpeed: 15,
-      autoupdate: Boolean,
-      mouseClick: false,
-      xPos: Number,
-      yPos: Number,
-      speedName: new Array(
-        "Instant",
-        "Very-Fast",
-        "Fast",
-        "Normal",
-        "Slow",
-        "Super-slow"
-      ),
-    });
-
-    const styles = computed(() => {
-      return {
-        left: state.xPos + "px",
-        top: state.yPos + "px",
-      };
-    });
-
-    function moveWindow(e) {
-      if (state.mouseClick) {
-        var rect = e.target.getBoundingClientRect();
-        state.xPos = rect.left + e.movementX;
-        state.yPos = rect.top + e.movementY;
-      }
-    }
-
-    return {
-      ...toRefs(state),
-      styles,
-      moveWindow,
-    };
-  },
-};
-</script>
 
 <style lang="scss">
 .toolbar {
@@ -118,9 +83,11 @@ button {
   background: none;
   border-radius: 10px;
   border: white solid 1px;
+
   &:hover {
     background: rgba(0, 27, 179, 0.6);
   }
+
   &:focus {
     outline: none;
   }
@@ -152,9 +119,11 @@ h2 {
   background: none;
   width: 80%;
   height: 30px;
+
   &::-webkit-slider-runnable-track {
     background: white;
   }
+
   &::-webkit-slider-thumb {
     appearance: none;
     border: 1px solid green;
