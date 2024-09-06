@@ -1,5 +1,7 @@
 <template>
-  <div class="title"><h1>PATHFINDER</h1></div>
+  <div class="title">
+    <h1>PATHFINDER</h1>
+  </div>
   <div class="howto">
     <span>HOW TO:</span>Click and hold anywhere on the grid to apply/remove a
     wall node. <br />
@@ -12,31 +14,18 @@
     <br />
     The toolbar on the left is movable by dragging.
   </div>
-  <Toolbar
-    @solve-click="solvePath"
-    @reset-click="resetAll"
-    @maze-click="genMaze"
-    @autoupdate-click="(e) => (autoUpdate = e)"
-    @get-speed="(e) => (animSpeed = e)"
-    @get-algo="(e) => (algorithm = e)"
-  />
+  <Toolbar @solve-click="solvePath" @reset-click="resetAll" @maze-click="genMaze"
+    @autoupdate-click="(e) => (autoUpdate = e)" @get-speed="(e) => (animSpeed = e)"
+    @get-algo="(e) => (algorithm = e)" />
   <div class="grid" @mouseup="handleMouseUp">
     <template v-for="(row, rid) in grid" :key="rid">
       <template v-for="(node, cid) in row" :key="cid">
-        <Node
-          :row="node.row"
-          :col="node.col"
-          :isStart="node.isStart"
-          :isWall="node.isWall"
-          :isEnd="node.isEnd"
-          @mouse-down="handleMouseDown"
-          @mouse-enter="handleMouseEnter"
-          @mouse-leave="handleMouseLeave"
-        ></Node>
+        <Node :row="node.row" :col="node.col" :isStart="node.isStart" :isWall="node.isWall" :isEnd="node.isEnd"
+          @mouse-down="handleMouseDown" @mouse-enter="handleMouseEnter" @mouse-leave="handleMouseLeave"></Node>
       </template>
     </template>
   </div>
-  <div class="credits">Made by Johan Berglund</div>
+  <div class="credits">Made by Johan Hultin</div>
 </template>
 
 <script>
@@ -189,7 +178,7 @@ export default {
           resetNode(node, ['node-shortest', 'node-visited']);
         }
       }
-      var id = window.setTimeout(function () {}, 0);
+      var id = window.setTimeout(function () { }, 0);
       while (id--) {
         window.clearTimeout(id);
       }
@@ -281,26 +270,32 @@ const createNode = (row, col) => {
   font-size: 0;
   outline: 2px solid #2c3e50;
 }
+
 .row {
   user-select: none;
 }
+
 .title {
   margin: 0;
   padding: 0;
   font-size: 3rem;
   font-weight: bold;
 }
+
 .credits {
   margin-top: 20px;
 }
+
 .howto {
   color: rgb(41, 73, 255);
   font-size: 1.1rem;
+
   & span {
     font-weight: bold;
     color: #721817;
   }
 }
+
 @media only screen and (max-width: 1800px) {
   .grid {
     width: 1420px;
