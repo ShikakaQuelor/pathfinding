@@ -1,0 +1,15 @@
+services:
+  pathfinding:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: pathfinding
+    restart: unless-stopped
+    expose:
+      - "3000"
+    networks:
+      - caddy_net
+
+networks:
+  caddy_net:
+    external: true
