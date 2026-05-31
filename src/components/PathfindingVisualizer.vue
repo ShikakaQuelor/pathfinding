@@ -3,251 +3,87 @@
     <h1>PATHFINDER</h1>
   </div>
   <div class="howto">
-    <span>HOW TO:</span>Click and hold anywhere on the grid to apply/remove a
+    <span>HOW TO:</span> Click and hold anywhere on the grid to apply/remove a
     wall node. <br />
     To move starting/end position drag'n'drop the pin to an empty grid location.
-    <br />
-    <br />
+    <br /><br />
     When you are satisfied with a maze, select an algorithm and click the
     "Solve" button. You also have the choice of generating a maze.
-    <br />
-    <br />
+    <br /><br />
     The toolbar on the left is movable by dragging.
   </div>
-  <Toolbar @solve-click="solvePath" @reset-click="resetAll" @maze-click="genMaze"
-    @autoupdate-click="(e) => (autoUpdate = e)" @get-speed="(e) => (animSpeed = e)"
-    @get-algo="(e) => (algorithm = e)" />
+  <Toolbar
+    @solve-click="solvePath"
+    @reset-click="resetAll"
+    @maze-click="genMaze"
+    @autoupdate-click="(e: boolean) => (autoUpdate = e)"
+    @get-speed="(e: number) => (animSpeed = e)"
+    @get-algo="(e: number) => (algorithm = e)"
+  />
   <div class="grid" @mouseup="handleMouseUp">
     <template v-for="(row, rid) in grid" :key="rid">
       <template v-for="(node, cid) in row" :key="cid">
-        <Node :row="node.row" :col="node.col" :isStart="node.isStart" :isWall="node.isWall" :isEnd="node.isEnd"
-          @mouse-down="handleMouseDown" @mouse-enter="handleMouseEnter" @mouse-leave="handleMouseLeave"></Node>
+        <Node
+          :row="node.row"
+          :col="node.col"
+          :isStart="node.isStart"
+          :isWall="node.isWall"
+          :isEnd="node.isEnd"
+          :isVisited="node.isVisited"
+          :isShortest="node.isShortest"
+          @mouse-down="handleMouseDown"
+          @mouse-enter="handleMouseEnter"
+          @mouse-leave="handleMouseLeave"
+        />
       </template>
     </template>
   </div>
   <div class="credits">Made by Johan Hultin</div>
 </template>
 
-<script>
-import { onMounted, reactive, toRefs } from 'vue';
+<script setup lang="ts">
+import { ref, reactive } from 'vue';
 import Node from './Node.vue';
 import Toolbar from './Toolbar.vue';
 import { getNodesShortestPath } from '../algorithms/utility';
 import { dijkstra } from '../algorithms/dijkstras';
 import { astar } from '../algorithms/astar';
 import { dfsMaze } from '../algorithms/maze';
+import type { GridNode, Grid } from '../types';
 
-export const NODE_START_ROW = 15;
-export const NODE_START_COL = 15;
-export const NODE_END_ROW = 15;
-export const NODE_END_COL = 55;
+// ─── Constants ───────────────────────────────────────────────────────────────
 
-export const algorithms = [dijkstra, astar];
+const ROWS = 31;
+const COLS = 71;
+const NODE_START_ROW = 15;
+const NODE_START_COL = 15;
+const NODE_END_ROW = 15;
+const NODE_END_COL = 55;
 
-export default {
-  components: {
-    Node,
-    Toolbar,
-  },
-  setup() {
-    const state = reactive({
-      grid: [],
-      mouseWall: Boolean,
-      mouseStart: Boolean,
-      mouseEnd: Boolean,
-      animSpeed: Number,
-      erase: Boolean,
-      algorithm: Number,
-      autoUpdate: Boolean,
-    });
+const algorithms = [dijkstra, astar];
 
-    onMounted(() => {
-      state.grid = getInitialGrid();
-      state.mouseWall = false;
-      state.mouseStart = false;
-      state.mouseEnd = false;
-      state.erase = false;
-      state.animSpeed = 10;
-      state.algorithm = 0;
-      state.autoUpdate = false;
-    });
+// ─── State ───────────────────────────────────────────────────────────────────
 
-    function handleMouseDown(row, col) {
-      if (state.grid[row][col].isStart) state.mouseStart = true;
-      if (state.grid[row][col].isEnd) state.mouseEnd = true;
-      if (!state.mouseEnd && !state.mouseStart) {
-        state.mouseWall = true;
-        state.erase = !state.grid[row][col].isWall;
-        state.grid[row][col].isWall = state.erase;
-        if (state.grid[row][col].isShortest) updatePath();
-      }
-    }
+const grid = ref<Grid>(getInitialGrid());
 
-    function handleMouseUp() {
-      if ((state.mouseStart || state.mouseEnd) && state.autoUpdate)
-        updatePath();
-      state.mouseWall = false;
-      state.mouseStart = false;
-      state.mouseEnd = false;
-    }
+// Track start/end positions directly — avoids O(n) full-grid scans
+const startPos = reactive({ row: NODE_START_ROW, col: NODE_START_COL });
+const endPos = reactive({ row: NODE_END_ROW, col: NODE_END_COL });
 
-    function handleMouseEnter(row, col) {
-      if (state.mouseStart) state.grid[row][col].isStart = true;
-      if (state.mouseEnd) state.grid[row][col].isEnd = true;
-      if (state.mouseWall && !(state.mouseEnd || state.mouseStart)) {
-        state.grid[row][col].isWall = state.erase;
-        if (state.grid[row][col].isShortest) updatePath();
-      }
-    }
+const mouseWall = ref(false);
+const mouseStart = ref(false);
+const mouseEnd = ref(false);
+const erase = ref(false);
+const animSpeed = ref(10);
+const algorithm = ref(0);
+const autoUpdate = ref(false);
 
-    function handleMouseLeave(row, col) {
-      if (state.mouseStart) {
-        state.grid[row][col].isStart = false;
-        resetPath();
-      }
-      if (state.mouseEnd) {
-        state.grid[row][col].isEnd = false;
-        resetPath();
-      }
-    }
+// Single animation handle — only one interval ever runs at a time
+const animHandle = ref<ReturnType<typeof setInterval> | null>(null);
 
-    function animatePath(visitedNodesInOrder, nodesInShortestPathOrder) {
-      for (let i = 0; i <= visitedNodesInOrder.length; i++) {
-        if (i === visitedNodesInOrder.length) {
-          setTimeout(() => {
-            animatePathShortest(nodesInShortestPathOrder);
-          }, state.animSpeed * i);
-          return;
-        }
-        setTimeout(() => {
-          const node = visitedNodesInOrder[i];
-          let element = document.getElementById(`node-${node.row}-${node.col}`);
-          if (
-            element.classList.contains('node-start') ||
-            element.classList.contains('node-finish')
-          )
-            return;
-          element.className = 'node node-visited';
-        }, state.animSpeed * i);
-      }
-    }
+// ─── Grid construction ───────────────────────────────────────────────────────
 
-    function animatePathShortest(nodesInShortestPathOrder) {
-      for (let i = 0; i < nodesInShortestPathOrder.length; i++) {
-        setTimeout(() => {
-          const node = nodesInShortestPathOrder[i];
-          let element = document.getElementById(`node-${node.row}-${node.col}`);
-
-          if (element.classList.contains('node-start'))
-            element.className = 'node node-shortest node-start';
-          else if (element.classList.contains('node-finish'))
-            element.className = 'node node-shortest node-finish';
-          else element.className = 'node node-shortest';
-        }, state.animSpeed * 5 * i);
-      }
-    }
-
-    function getPathAlgorithm() {
-      const { grid } = state;
-      const startNode = getStartNode(grid);
-      const endNode = getEndNode(grid);
-      const visitedNodesInOrder = algorithms[state.algorithm](
-        grid,
-        startNode,
-        endNode
-      );
-      const nodesInShortestPathOrder = getNodesShortestPath(endNode);
-      return { visitedNodesInOrder, nodesInShortestPathOrder };
-    }
-
-    function updatePath() {
-      if (!state.autoUpdate) return;
-      solvePath();
-    }
-
-    function solvePath() {
-      resetPath();
-      const { visitedNodesInOrder, nodesInShortestPathOrder } =
-        getPathAlgorithm();
-      animatePath(visitedNodesInOrder, nodesInShortestPathOrder);
-    }
-
-    function resetPath() {
-      for (const row of state.grid) {
-        for (const node of row) {
-          resetNode(node, ['node-shortest', 'node-visited']);
-        }
-      }
-      var id = window.setTimeout(function () { }, 0);
-      while (id--) {
-        window.clearTimeout(id);
-      }
-    }
-
-    function resetAll() {
-      state.grid = getInitialGrid();
-      resetPath();
-    }
-
-    function genMaze() {
-      resetPath();
-      const startNode = getStartNode(state.grid);
-      dfsMaze(state.grid, startNode);
-    }
-
-    return {
-      handleMouseDown,
-      handleMouseUp,
-      handleMouseEnter,
-      handleMouseLeave,
-      solvePath,
-      resetAll,
-      genMaze,
-      ...toRefs(state),
-    };
-  },
-};
-
-const resetNode = (node, classRemove) => {
-  node.isVisited = false;
-  node.isShortest = false;
-  node.previousNode = null;
-  node.distance = Infinity;
-  node.f = null;
-  document
-    .getElementById(`node-${node.row}-${node.col}`)
-    .classList.remove(...classRemove);
-};
-
-const getStartNode = (grid) => {
-  for (const row of grid) {
-    for (const node of row) {
-      if (node.isStart) return node;
-    }
-  }
-};
-
-const getEndNode = (grid) => {
-  for (const row of grid) {
-    for (const node of row) {
-      if (node.isEnd) return node;
-    }
-  }
-};
-
-const getInitialGrid = () => {
-  const grid = [];
-  for (let row = 0; row < 31; row++) {
-    const currentRow = [];
-    for (let col = 0; col < 71; col++) {
-      currentRow.push(createNode(row, col));
-    }
-    grid.push(currentRow);
-  }
-  return grid;
-};
-
-const createNode = (row, col) => {
+function createNode(row: number, col: number): GridNode {
   return {
     row,
     col,
@@ -258,8 +94,219 @@ const createNode = (row, col) => {
     isShortest: false,
     previousNode: null,
     distance: Infinity,
+    f: Infinity,
   };
+}
+
+function getInitialGrid(): Grid {
+  const g: Grid = [];
+  for (let row = 0; row < ROWS; row++) {
+    const currentRow: GridNode[] = [];
+    for (let col = 0; col < COLS; col++) {
+      currentRow.push(createNode(row, col));
+    }
+    g.push(currentRow);
+  }
+  return g;
+}
+
+// ─── Mouse handlers ──────────────────────────────────────────────────────────
+
+function handleMouseDown(row: number, col: number): void {
+  const node = grid.value[row][col];
+  if (node.isStart) {
+    mouseStart.value = true;
+    return;
+  }
+  if (node.isEnd) {
+    mouseEnd.value = true;
+    return;
+  }
+  mouseWall.value = true;
+  // Toggle: if it was a wall, erase it; if open, draw a wall
+  erase.value = !node.isWall;
+  node.isWall = erase.value;
+  if (node.isShortest) updatePath();
+}
+
+function handleMouseUp(): void {
+  if ((mouseStart.value || mouseEnd.value) && autoUpdate.value) updatePath();
+  mouseWall.value = false;
+  mouseStart.value = false;
+  mouseEnd.value = false;
+}
+
+function handleMouseEnter(row: number, col: number): void {
+  const node = grid.value[row][col];
+  if (mouseStart.value) {
+    node.isStart = true;
+    startPos.row = row;
+    startPos.col = col;
+  }
+  if (mouseEnd.value) {
+    node.isEnd = true;
+    endPos.row = row;
+    endPos.col = col;
+  }
+  if (mouseWall.value && !(mouseEnd.value || mouseStart.value)) {
+    node.isWall = erase.value;
+    if (node.isShortest) updatePath();
+  }
+}
+
+function handleMouseLeave(row: number, col: number): void {
+  const node = grid.value[row][col];
+  if (mouseStart.value) {
+    node.isStart = false;
+    resetPath();
+  }
+  if (mouseEnd.value) {
+    node.isEnd = false;
+    resetPath();
+  }
+}
+
+// ─── Animation ───────────────────────────────────────────────────────────────
+
+// Maps toolbar slider value → { delay in ms, nodes revealed per tick }.
+// Decouples the slider range from actual timing so they can be tuned independently.
+const SPEED_CONFIG: Record<number, { delay: number; batchSize: number }> = {
+  5:  { delay: 8,  batchSize: 5 }, // Very-Fast
+  10: { delay: 14, batchSize: 3 }, // Fast
+  15: { delay: 22, batchSize: 1 }, // Normal
+  20: { delay: 45, batchSize: 1 }, // Slow
+  25: { delay: 90, batchSize: 1 }, // Super-slow
 };
+
+/**
+ * Animate visited nodes using a single setInterval.
+ * At speed=0 ("Instant") all nodes are applied synchronously in one pass.
+ */
+function animatePath(visited: GridNode[], shortest: GridNode[]): void {
+  if (animSpeed.value === 0) {
+    for (const node of visited) {
+      if (!node.isStart && !node.isEnd) node.isVisited = true;
+    }
+    animateShortest(shortest);
+    return;
+  }
+
+  const { delay, batchSize } = SPEED_CONFIG[animSpeed.value] ?? { delay: 35, batchSize: 1 };
+  let i = 0;
+  animHandle.value = setInterval(() => {
+    for (let b = 0; b < batchSize; b++) {
+      if (i >= visited.length) {
+        stopAnimation();
+        animateShortest(shortest);
+        return;
+      }
+      const node = visited[i];
+      if (!node.isStart && !node.isEnd) node.isVisited = true;
+      i++;
+    }
+  }, delay);
+}
+
+function animateShortest(shortest: GridNode[]): void {
+  if (animSpeed.value === 0) {
+    for (const node of shortest) {
+      node.isShortest = true;
+    }
+    return;
+  }
+
+  const { delay } = SPEED_CONFIG[animSpeed.value] ?? { delay: 35 };
+  let i = 0;
+  // Shortest path always reveals one node at a time at 4× the visited delay
+  animHandle.value = setInterval(() => {
+    if (i >= shortest.length) {
+      stopAnimation();
+      return;
+    }
+    shortest[i].isShortest = true;
+    i++;
+  }, delay * 4);
+}
+
+function stopAnimation(): void {
+  if (animHandle.value !== null) {
+    clearInterval(animHandle.value);
+    animHandle.value = null;
+  }
+}
+
+// ─── Path logic ──────────────────────────────────────────────────────────────
+
+function getStartNode(): GridNode {
+  return grid.value[startPos.row][startPos.col];
+}
+
+function getEndNode(): GridNode {
+  return grid.value[endPos.row][endPos.col];
+}
+
+function getPathResult() {
+  const startNode = getStartNode();
+  const endNode = getEndNode();
+  const visitedNodesInOrder = algorithms[algorithm.value](grid.value, startNode, endNode);
+  const nodesInShortestPathOrder = getNodesShortestPath(endNode);
+  return { visitedNodesInOrder, nodesInShortestPathOrder };
+}
+
+function updatePath(): void {
+  if (!autoUpdate.value) return;
+  solvePath();
+}
+
+function solvePath(): void {
+  resetPath();
+  const { visitedNodesInOrder, nodesInShortestPathOrder } = getPathResult();
+
+  // The algorithm sets node.isVisited and node.isShortest on the live grid nodes
+  // for its own internal tracking. Reset those flags so the animator can drive
+  // the visual state step-by-step via Vue reactivity.
+  for (const node of visitedNodesInOrder) {
+    node.isVisited = false;
+  }
+  for (const node of nodesInShortestPathOrder) {
+    node.isShortest = false;
+    node.isVisited = false; // shortest nodes were also marked visited
+  }
+
+  animatePath(visitedNodesInOrder, nodesInShortestPathOrder);
+}
+
+/**
+ * Cancel any running animation and reset all node visited/shortest state.
+ * Only clears our own handle — no brute-force global timer sweep.
+ */
+function resetPath(): void {
+  stopAnimation();
+  for (const row of grid.value) {
+    for (const node of row) {
+      node.isVisited = false;
+      node.isShortest = false;
+      node.previousNode = null;
+      node.distance = Infinity;
+      node.f = Infinity;
+    }
+  }
+}
+
+function resetAll(): void {
+  stopAnimation();
+  // Reset start/end tracking positions
+  startPos.row = NODE_START_ROW;
+  startPos.col = NODE_START_COL;
+  endPos.row = NODE_END_ROW;
+  endPos.col = NODE_END_COL;
+  grid.value = getInitialGrid();
+}
+
+function genMaze(): void {
+  resetPath();
+  dfsMaze(grid.value, getStartNode());
+}
 </script>
 
 <style lang="scss">
