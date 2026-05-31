@@ -10,22 +10,25 @@
 </template>
 
 <script setup lang="ts">
-import { defineProps, computed } from 'vue';
+import { computed } from 'vue';
+
 const props = defineProps<{
   row: number;
   col: number;
   isStart: boolean;
   isEnd: boolean;
   isWall: boolean;
+  isVisited: boolean;
+  isShortest: boolean;
 }>();
+
 const extraClass = computed(() => {
-  return props.isEnd
-    ? 'node-finish'
-    : props.isStart
-    ? 'node-start'
-    : props.isWall
-    ? 'node-wall'
-    : '';
+  if (props.isEnd) return props.isShortest ? 'node-shortest node-finish' : 'node-finish';
+  if (props.isStart) return props.isShortest ? 'node-shortest node-start' : 'node-start';
+  if (props.isShortest) return 'node-shortest';
+  if (props.isVisited) return 'node-visited';
+  if (props.isWall) return 'node-wall';
+  return '';
 });
 </script>
 
@@ -42,17 +45,20 @@ const extraClass = computed(() => {
   outline: none;
   background-color: rgb(8, 34, 46);
   animation: wallAnimation 0.3s ease-in-out forwards;
+  will-change: transform;
 }
 
 .node-visited {
   outline: 1px dashed rgba(255, 255, 255, 0.1);
   animation: visitedAnimation 1.5s ease-out forwards running;
+  will-change: transform, background-color;
 }
 
 .node-shortest {
   background: rgba(41, 73, 255, 0.75);
   outline: 1px dashed rgba(255, 255, 255, 0.2);
   animation: shortestAnimation 1.5s ease-out forwards running;
+  will-change: transform, background-color;
 }
 
 .node-start {
@@ -123,6 +129,7 @@ const extraClass = computed(() => {
     background-color: #21d4d4;
   }
 }
+
 @media only screen and (max-width: 1800px) {
   .node {
     width: 20px;
