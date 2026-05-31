@@ -1,16 +1,9 @@
 <template>
-  <PathViz></PathViz>
+  <PathViz />
 </template>
 
-<script>
-import PathViz from "./components/PathfindingVisualizer.vue";
-
-export default {
-  name: "App",
-  components: {
-    PathViz,
-  },
-};
+<script setup lang="ts">
+import PathViz from './components/PathfindingVisualizer.vue';
 </script>
 
 <style>

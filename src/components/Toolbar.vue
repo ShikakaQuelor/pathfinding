@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 import { ref, reactive } from "vue";
 
 const selectedAlgorithm = ref(0);
@@ -20,9 +20,10 @@ const speedName = [
   "Super-slow"
 ];
 
-function moveWindow(e) {
+function moveWindow(e: MouseEvent) {
   if (isMouseDown.value) {
-    var rect = e.target.getBoundingClientRect();
+    const target = e.currentTarget as HTMLElement;
+    const rect = target.getBoundingClientRect();
     styleObject.left = rect.left + e.movementX + 'px';
     styleObject.top = rect.top + e.movementY + 'px';
   }
